@@ -1,0 +1,10 @@
+Cloud/bin
+Cloud/obj
+
+Mqtt_Client/bin
+Mqtt_Client/obj
+
+Objects/bin
+Objects/obj
+
+.vs
