@@ -21,7 +21,8 @@ namespace Mqtt_Client
             rnd = new Random();
             MqttClientOptionsBuilder builder = new MqttClientOptionsBuilder()
                                                        .WithClientId("Development")
-                                                       .WithTcpServer("localhost", 707);
+                                                       .WithTcpServer("localhost", 707)
+                                                       .WithCredentials("user1", "password");
 
             ManagedMqttClientOptions options = new ManagedMqttClientOptionsBuilder()
                                     .WithAutoReconnectDelay(TimeSpan.FromSeconds(10))
@@ -42,17 +43,21 @@ namespace Mqtt_Client
             }
         }
 
+        /// <summary>
+        /// Sends random data to the server.
+        /// </summary>
         private void SendRandomData()
         {
             Random rnd = new Random();
+            string format = "yyyy-MM-dd HH:mm:ss";
 
             int value = rnd.Next(1, 25);
             string valueType = "Integer";
             string sensorId = "1";
             string transmitterId = "DICJLab02";
             string zoneId = "1";
-            string date = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
-            date = date.Replace("-", "/");
+            string dataType = "Temperature";
+            string date = DateTime.Now.ToString(format);
             Input input = new Input()
             {
                 Value = value,
@@ -60,7 +65,8 @@ namespace Mqtt_Client
                 SensorId = sensorId,
                 TransmitterId = transmitterId,
                 ZoneId = zoneId,
-                SentDate = date
+                SentDate = date,
+                DataType = dataType
             };
 
             string json = JsonConvert.SerializeObject(input);
@@ -71,8 +77,7 @@ namespace Mqtt_Client
             sensorId = "2";
             transmitterId = "DICJLab01";
             zoneId = "2";
-            date = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
-            date = date.Replace("-", "/");
+            date = DateTime.Now.ToString(format);
             input = new Input()
             {
                 Value = value,
@@ -80,13 +85,17 @@ namespace Mqtt_Client
                 SensorId = sensorId,
                 TransmitterId = transmitterId,
                 ZoneId = zoneId,
-                SentDate = date
+                SentDate = date,
+                DataType = dataType
             };
 
             json = JsonConvert.SerializeObject(input);
             mqttClient.PublishAsync("dev.to/topic/json", json);
         }
 
+        /// <summary>
+        /// Sets the event handler of the client.
+        /// </summary>
         private void SetHandlers()
         {
             mqttClient.ConnectedHandler = new MqttClientConnectedHandlerDelegate(OnConnected);

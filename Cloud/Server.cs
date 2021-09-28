@@ -8,26 +8,53 @@ using System.Globalization;
 using System.Timers;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using MQTTnet.Protocol;
 
 namespace Mqtt_Server
 {
     class Server
     {
-        private List<Input> inputs;
+        private List<Input> inputs1;
+        private List<Input> inputs2;
+        private bool useInputs1; 
+
         List<Transmitter> transmitters = new List<Transmitter>();
         List<Zone> zones = new List<Zone>();
         private Timer timer;
+        private int intervalSeconds = 5;
+
+        private List<string> Users;
+        private List<string> Passwords;
 
         public Server()
         {
-            inputs = new List<Input>();
+            inputs1 = new List<Input>();
+            inputs2 = new List<Input>();
+            useInputs1 = true;
+
+            Users = new List<string>() { "user1" };
+            Passwords = new List<string>() { "password" };
+
             SetTimer();
 
             MqttServerOptionsBuilder options = new MqttServerOptionsBuilder()
                 .WithDefaultEndpoint()
                 .WithDefaultEndpointPort(707)
                 .WithConnectionValidator(OnNewConnection)
-                .WithApplicationMessageInterceptor(OnNewMessage);
+                .WithApplicationMessageInterceptor(OnNewMessage)
+                .WithConnectionValidator(c =>
+                {
+                    for (int i = 0; i < Users.Count; i++)
+                    {
+                        if (Users[i] == c.Username && Passwords[i] == c.Password)
+                        {
+                            c.ReasonCode = MqttConnectReasonCode.Success;
+                            return;
+                        }
+                    }
+                    c.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;
+                });
 
             IMqttServer mqttServer = new MqttFactory().CreateMqttServer();
             mqttServer.StartAsync(options.Build()).GetAwaiter().GetResult();
@@ -35,14 +62,26 @@ namespace Mqtt_Server
             Interface.ReadLine();
         }
 
+        private void ValidateClient()
+        {
+
+        }
+
+        /// <summary>
+        /// Creates and configures the timer property of the server used to send, log and display the average data.
+        /// </summary>
         private void SetTimer()
         {
-            timer = new Timer(5000);
+            timer = new Timer(intervalSeconds * 1000);
             timer.Elapsed += ProcessData;
             timer.AutoReset = true;
             timer.Enabled = true;
         }
 
+        /// <summary>
+        /// Logs the specified Data to a log file.
+        /// </summary>
+        /// <param name="data">The data to use.</param>
         private void LogData(Data data)
         {
             string fileName = Directory.GetCurrentDirectory() + "\\logs.txt";
@@ -54,6 +93,10 @@ namespace Mqtt_Server
             writer.Close();
         }
 
+        /// <summary>
+        /// Fills the zone list with averaged and aggregated data with the given inputs.
+        /// </summary>
+        /// <param name="inputs">The list of inputs to use.</param>
         private void AggregateData(List<Input> inputs)
         {
             if (inputs == null || inputs.Count == 0)
@@ -84,6 +127,12 @@ namespace Mqtt_Server
             AggregateData(inputs.Where(x => x.SensorId != firstInput.SensorId)?.ToList());
         }
 
+        /// <summary>
+        /// Formats the given value depending of the given valueType.
+        /// </summary>
+        /// <param name="value">The value to use.</param>
+        /// <param name="valueType">The valueType to use.</param>
+        /// <returns></returns>
         private string FormatValue(double value, string valueType)
         {
             switch (valueType)
@@ -93,6 +142,11 @@ namespace Mqtt_Server
             }
         }
 
+        /// <summary>
+        /// Gets the average of the value of the given Input list.
+        /// </summary>
+        /// <param name="inputs">The Input list to use.</param>
+        /// <returns>Return the average of the values.</returns>
         private double GetAvg(List<Input> inputs)
         {
             try
@@ -109,21 +163,57 @@ namespace Mqtt_Server
             }
         }
 
+        /// <summary>
+        /// Aggregates, displays, logs and pushes the data in the given Input list.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="e"></param>
         private void ProcessData(Object source, ElapsedEventArgs e)
         {
-            AggregateData(inputs);
-            Data data = new Data() { TimeStamp = DateTime.Now, zones = zones };
+            List<Input> inputs = GetUsableInputList();
+            if (inputs.Count == 0)
+                return;
 
+            DateTime startDate = inputs.OrderBy(x => x.TimeStamp).FirstOrDefault().TimeStamp;
+            DateTime endDate = inputs.OrderByDescending(x => x.TimeStamp).FirstOrDefault().TimeStamp;
+            useInputs1 = !useInputs1;
+            
+            AggregateData(inputs);
+            Data data = new Data() { Zones = zones, StartDate = startDate, EndDate = endDate };
+
+            DisplayInfo(data);
             LogData(data);
             PushData(data);
         }
 
-        private void PushData(Data data)
+        /// <summary>
+        /// Pushes the data to the 
+        /// </summary>
+        /// <param name="data"></param>
+        private async void PushData(Data data)
+        {
+            using(HttpClient client = new HttpClient())
+            {
+                string url = "https://sveatest1.azurewebsites.net/api/HttpConnection";
+                StringContent stringContent = new StringContent(data.ToString());
+                HttpResponseMessage response = await client.PostAsync(url,stringContent );
+                string responseString = await response.Content.ReadAsStringAsync();
+                Interface.WriteLine(responseString);
+            }
+        }
+
+        private void DisplayInfo(Data data)
         {
             Interface.Clear();
             Interface.WriteLine(JsonConvert.DeserializeObject(data.ToString()));
+            List<Input> inputs = GetUsableInputList();
             inputs = new List<Input>();
             zones = new List<Zone>();
+        }
+
+        private List<Input> GetUsableInputList()
+        {
+            return useInputs1 ? inputs1 : inputs2;
         }
 
         private void OnNewConnection(MqttConnectionValidatorContext context)
@@ -133,8 +223,10 @@ namespace Mqtt_Server
 
         private void OnNewMessage(MqttApplicationMessageInterceptorContext context)
         {
+            List<Input> inputs = GetUsableInputList();
+            //Interface.WriteLine(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload));
             inputs.Add(JsonConvert.DeserializeObject<Input>(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload)));
-            inputs[inputs.Count - 1].TimeStamp = DateTime.Parse(inputs[inputs.Count - 1].SentDate, new CultureInfo("fr-FR", false));
+            inputs[inputs.Count - 1].TimeStamp = DateTime.Parse(inputs[inputs.Count - 1].SentDate, new CultureInfo("fr-CA", false));
             //Interface.WriteLine($"Content : {JsonConvert.DeserializeObject(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload))}\tTopic: {context.ApplicationMessage?.Topic}");
         }
     }
