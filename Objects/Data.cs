@@ -6,6 +6,7 @@ namespace Objects
 {
     public class Data
     {
+        public string VersionId { get; set; }
         public List<Zone> Zones { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }

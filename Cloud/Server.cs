@@ -17,7 +17,8 @@ namespace Mqtt_Server
     {
         private List<Input> inputs1;
         private List<Input> inputs2;
-        private bool useInputs1; 
+        private bool useInputs1;
+        private string versionId = "1.1";
 
         List<Transmitter> transmitters = new List<Transmitter>();
         List<Zone> zones = new List<Zone>();
@@ -88,7 +89,7 @@ namespace Mqtt_Server
             string content = File.ReadAllText(fileName);
             StreamWriter writer = new StreamWriter(fileName);
 
-            content += JsonConvert.DeserializeObject(data.ToString()) + "\n,";
+            content += JsonConvert.DeserializeObject(data.ToString()) + ",\n";
             writer.Write(content);
             writer.Close();
         }
@@ -179,7 +180,7 @@ namespace Mqtt_Server
             useInputs1 = !useInputs1;
             
             AggregateData(inputs);
-            Data data = new Data() { Zones = zones, StartDate = startDate, EndDate = endDate };
+            Data data = new Data() { VersionId = versionId, Zones = zones, StartDate = startDate, EndDate = endDate };
 
             DisplayInfo(data);
             LogData(data);
