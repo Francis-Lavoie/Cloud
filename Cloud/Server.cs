@@ -43,29 +43,12 @@ namespace Mqtt_Server
                 .WithDefaultEndpoint()
                 .WithDefaultEndpointPort(707)
                 .WithConnectionValidator(OnNewConnection)
-                .WithApplicationMessageInterceptor(OnNewMessage)
-                .WithConnectionValidator(c =>
-                {
-                    for (int i = 0; i < Users.Count; i++)
-                    {
-                        if (Users[i] == c.Username && Passwords[i] == c.Password)
-                        {
-                            c.ReasonCode = MqttConnectReasonCode.Success;
-                            return;
-                        }
-                    }
-                    c.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;
-                });
+                .WithApplicationMessageInterceptor(OnNewMessage);
 
             IMqttServer mqttServer = new MqttFactory().CreateMqttServer();
             mqttServer.StartAsync(options.Build()).GetAwaiter().GetResult();
 
             Interface.ReadLine();
-        }
-
-        private void ValidateClient()
-        {
-
         }
 
         /// <summary>

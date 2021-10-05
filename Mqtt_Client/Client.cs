@@ -21,8 +21,7 @@ namespace Mqtt_Client
             rnd = new Random();
             MqttClientOptionsBuilder builder = new MqttClientOptionsBuilder()
                                                        .WithClientId("Development")
-                                                       .WithTcpServer("localhost", 707)
-                                                       .WithCredentials("user1", "password");
+                                                       .WithTcpServer("localhost", 707);
 
             ManagedMqttClientOptions options = new ManagedMqttClientOptionsBuilder()
                                     .WithAutoReconnectDelay(TimeSpan.FromSeconds(10))
