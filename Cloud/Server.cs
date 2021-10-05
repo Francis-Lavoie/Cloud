@@ -41,7 +41,7 @@ namespace Mqtt_Server
 
             MqttServerOptionsBuilder options = new MqttServerOptionsBuilder()
                 .WithDefaultEndpoint()
-                .WithDefaultEndpointPort(707)
+                .WithDefaultEndpointPort(1883)
                 .WithConnectionValidator(OnNewConnection)
                 .WithApplicationMessageInterceptor(OnNewMessage)
                 .WithConnectionValidator(c =>
@@ -178,7 +178,7 @@ namespace Mqtt_Server
             DateTime startDate = inputs.OrderBy(x => x.TimeStamp).FirstOrDefault().TimeStamp;
             DateTime endDate = inputs.OrderByDescending(x => x.TimeStamp).FirstOrDefault().TimeStamp;
             useInputs1 = !useInputs1;
-            
+
             AggregateData(inputs);
             Data data = new Data() { VersionId = versionId, Zones = zones, StartDate = startDate, EndDate = endDate };
 
@@ -193,13 +193,23 @@ namespace Mqtt_Server
         /// <param name="data"></param>
         private async void PushData(Data data)
         {
-            using(HttpClient client = new HttpClient())
+            using (HttpClient client = new HttpClient())
             {
-                string url = "https://sveatest1.azurewebsites.net/api/HttpConnection";
-                StringContent stringContent = new StringContent(data.ToString());
-                HttpResponseMessage response = await client.PostAsync(url,stringContent );
-                string responseString = await response.Content.ReadAsStringAsync();
-                Interface.WriteLine(responseString);
+                try
+                {
+                    string key = Authentication.GetFunctionKey();
+                    string url = "https://sveatest1.azurewebsites.net/api/HttpConnection";
+
+                    client.DefaultRequestHeaders.Add("x-functions-key", key);
+                    StringContent stringContent = new StringContent(data.ToString());
+                    HttpResponseMessage response = await client.PostAsync(url, stringContent);
+                    string responseString = await response.Content.ReadAsStringAsync();
+                    Interface.WriteLine(responseString);
+                }
+                catch (Exception e)
+                {
+                    Interface.WriteLine($"Unable to push data : {e.Message}");
+                }
             }
         }
 
