@@ -21,7 +21,7 @@ namespace Mqtt_Client
             rnd = new Random();
             MqttClientOptionsBuilder builder = new MqttClientOptionsBuilder()
                                                        .WithClientId("Development")
-                                                       .WithTcpServer("SRV-CLOUD01 ", 1883)
+                                                       .WithTcpServer("localhost", 8883)
                                                        .WithCredentials("user1", "password");
 
             ManagedMqttClientOptions options = new ManagedMqttClientOptionsBuilder()

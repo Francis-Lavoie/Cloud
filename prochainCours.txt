@@ -1,0 +1,5 @@
+Séparation en topic Ex. : RoomID/transmitterID/sensorID
+
+authentification avec l'AD
+
+

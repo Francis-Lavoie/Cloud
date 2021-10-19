@@ -10,6 +10,8 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using MQTTnet.Protocol;
+using System.Security.Cryptography.X509Certificates;
+using System.Net.Security;
 
 namespace Mqtt_Server
 {
@@ -38,10 +40,12 @@ namespace Mqtt_Server
             Passwords = new List<string>() { "password" };
 
             SetTimer();
+            MqttServerOptions serverOptions = new MqttServerOptions();
+            serverOptions.TlsEndpointOptions.IsEnabled = true;
 
             MqttServerOptionsBuilder options = new MqttServerOptionsBuilder()
                 .WithDefaultEndpoint()
-                .WithDefaultEndpointPort(1883)
+                .WithDefaultEndpointPort(8883)
                 .WithConnectionValidator(OnNewConnection)
                 .WithApplicationMessageInterceptor(OnNewMessage)
                 .WithConnectionValidator(c =>
@@ -61,6 +65,16 @@ namespace Mqtt_Server
             mqttServer.StartAsync(options.Build()).GetAwaiter().GetResult();
 
             Interface.ReadLine();
+        }
+
+        private bool ValidateCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            if (sslPolicyErrors == SslPolicyErrors.None)
+                return true;
+            Console.WriteLine("Certificate error: {0}", sslPolicyErrors);
+
+            // Do not allow this client to communicate with unauthenticated servers.
+            return false;
         }
 
         private void ValidateClient()
@@ -234,11 +248,17 @@ namespace Mqtt_Server
 
         private void OnNewMessage(MqttApplicationMessageInterceptorContext context)
         {
-            List<Input> inputs = GetUsableInputList();
-            //Interface.WriteLine(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload));
-            inputs.Add(JsonConvert.DeserializeObject<Input>(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload)));
-            inputs[inputs.Count - 1].TimeStamp = DateTime.Parse(inputs[inputs.Count - 1].SentDate, new CultureInfo("fr-CA", false));
-            //Interface.WriteLine($"Content : {JsonConvert.DeserializeObject(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload))}\tTopic: {context.ApplicationMessage?.Topic}");
+            try
+            {
+                List<Input> inputs = GetUsableInputList();
+                inputs.Add(JsonConvert.DeserializeObject<Input>(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload)));
+                inputs[inputs.Count - 1].TimeStamp = DateTime.Parse(inputs[inputs.Count - 1].SentDate, new CultureInfo("fr-CA", false));
+            }
+            catch(Exception e)
+            {
+                Interface.WriteLine(e.Message);
+                Interface.WriteLine(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload));
+            }
         }
     }
 }
