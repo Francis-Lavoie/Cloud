@@ -130,7 +130,7 @@ namespace Mqtt_Server
         /// <param name="inputs">The list of inputs to use.</param>
         private void AggregateData(List<Input> inputs)
         {
-            if (inputs == null || inputs.Count == 0)
+             if (inputs == null || inputs.Count == 0)
                 return;
             transmitters = new List<Transmitter>();
 
@@ -259,11 +259,11 @@ namespace Mqtt_Server
 
         private void FillInput(string topic, Input input)
         {
-            Dictionary<string, string> keyValues = Objects.TopicManager.ParseTopic(topic);
-            Interface.WriteLine($"{keyValues["sensorId"]} { keyValues["transmitterId"]}");
-            input.DataType = keyValues["dataType"];
-            input.SensorId = keyValues["sensorId"];
-            input.TransmitterId = keyValues["transmitterId"];
+            Input tempInput = Objects.TopicManager.ParseTopic(topic);
+            input.DataType = tempInput.DataType;
+            input.SensorId = tempInput.SensorId;
+            input.TransmitterId = tempInput.TransmitterId;
+            input.ZoneId = tempInput.ZoneId;
         }
 
         private void OnNewConnection(MqttConnectionValidatorContext context)

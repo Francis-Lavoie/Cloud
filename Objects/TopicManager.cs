@@ -6,24 +6,20 @@ namespace Objects
 {
     public static class TopicManager
     {
-        public static Dictionary<string, string> ParseTopic(string topic)
+        public static Input ParseTopic(string topic)
         {
-            string baseKeyword = "LOCAL";
+            string prefix = "LOCAL";
             int partCount = 5;
-            string[] keys = new string[] { "baseKeyword","zoneId", "transmitterId", "sensorId", "dataType" };
             string[] values = topic.Split('/');
-            Dictionary<string, string> keyValues = new Dictionary<string, string>();
-
+            
             if (topic == null || topic == "")
                 return null;
             if (topic.Split('/').Length != partCount)
                 return null;
-            if (!topic.ToUpper().StartsWith(baseKeyword))
+            if (!topic.ToUpper().StartsWith(prefix))
                 return null;
 
-            for (int i = 0; i < keys.Length; i++)
-                keyValues[keys[i]] = values[i];
-            return keyValues;
+            return new Input() { ZoneId = values[1], TransmitterId = values[2], SensorId = values[3], DataType = values[4] };
         }
     }
 }
