@@ -23,7 +23,7 @@ namespace Mqtt_Client
             MqttClientOptionsBuilder builder = new MqttClientOptionsBuilder()
                                                        .WithClientId("Development")
                                                        .WithTcpServer("localhost", 8883)
-                                                       .WithCredentials("1932614@etu.cegepjonquiere.ca", "Suzukiz400&*");
+                                                       .WithCredentials("svea21-03@etu.cegepjonquiere.ca", "m0dd3Pa$$");
 
             ManagedMqttClientOptions options = new ManagedMqttClientOptionsBuilder()
                                     .WithAutoReconnectDelay(TimeSpan.FromSeconds(10))

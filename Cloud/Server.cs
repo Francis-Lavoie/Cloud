@@ -61,7 +61,7 @@ namespace Mqtt_Server
         {
             try
             {
-                if (!c.Username.StartsWith("SVEA"))
+                if (!c.Username.ToUpper().StartsWith("SVEA"))
                 {
                     c.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;
                     return;
