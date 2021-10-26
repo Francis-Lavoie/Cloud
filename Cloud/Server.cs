@@ -130,7 +130,7 @@ namespace Mqtt_Server
         /// <param name="inputs">The list of inputs to use.</param>
         private void AggregateData(List<Input> inputs)
         {
-            if (inputs == null || inputs.Count == 0)
+             if (inputs == null || inputs.Count == 0)
                 return;
             transmitters = new List<Transmitter>();
 
@@ -257,6 +257,15 @@ namespace Mqtt_Server
             return useInputs1 ? inputs1 : inputs2;
         }
 
+        private void FillInput(string topic, Input input)
+        {
+            Input tempInput = Objects.TopicManager.ParseTopic(topic);
+            input.DataType = tempInput.DataType;
+            input.SensorId = tempInput.SensorId;
+            input.TransmitterId = tempInput.TransmitterId;
+            input.ZoneId = tempInput.ZoneId;
+        }
+
         private void OnNewConnection(MqttConnectionValidatorContext context)
         {
             Interface.WriteLine($"Client id: {context.ClientId}");
@@ -268,8 +277,10 @@ namespace Mqtt_Server
             {
                 List<Input> inputs = GetUsableInputList();
                 string topic = context.ApplicationMessage.Topic;
-                //Interface.WriteLine(topic + "\n" + System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload));
-                inputs.Add(JsonConvert.DeserializeObject<Input>(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload)));
+                Input input = JsonConvert.DeserializeObject<Input>(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload));
+
+                FillInput(topic, input);
+                inputs.Add(input);
                 inputs[inputs.Count - 1].TimeStamp = DateTime.Parse(inputs[inputs.Count - 1].SentDate, new CultureInfo("fr-CA", false));
             }
             catch (Exception e)

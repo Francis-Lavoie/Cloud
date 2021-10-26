@@ -15,7 +15,8 @@ namespace Mqtt_Client
     {
         private IManagedMqttClient mqttClient;
         private Random rnd;
-        private string topic = "/local/zoneID/transmitterId/sensorId/dataType";
+        private string topic = "local/zoneID/transmitterId/sensorId/dataType";
+        private string topic2 = "local/zoneID/transmitterId/sensorId/dataType2";
 
         public Client()
         {
@@ -91,7 +92,7 @@ namespace Mqtt_Client
             };
 
             json = JsonConvert.SerializeObject(input);
-            mqttClient.PublishAsync(topic, json);
+            mqttClient.PublishAsync(topic2, json);
         }
 
         /// <summary>
