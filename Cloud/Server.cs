@@ -257,6 +257,15 @@ namespace Mqtt_Server
             return useInputs1 ? inputs1 : inputs2;
         }
 
+        private void FillInput(string topic, Input input)
+        {
+            Dictionary<string, string> keyValues = Objects.TopicManager.ParseTopic(topic);
+            Interface.WriteLine($"{keyValues["sensorId"]} { keyValues["transmitterId"]}");
+            input.DataType = keyValues["dataType"];
+            input.SensorId = keyValues["sensorId"];
+            input.TransmitterId = keyValues["transmitterId"];
+        }
+
         private void OnNewConnection(MqttConnectionValidatorContext context)
         {
             Interface.WriteLine($"Client id: {context.ClientId}");
@@ -268,8 +277,10 @@ namespace Mqtt_Server
             {
                 List<Input> inputs = GetUsableInputList();
                 string topic = context.ApplicationMessage.Topic;
-                Interface.WriteLine(topic);
-                inputs.Add(JsonConvert.DeserializeObject<Input>(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload)));
+                Input input = JsonConvert.DeserializeObject<Input>(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload));
+
+                FillInput(topic, input);
+                inputs.Add(input);
                 inputs[inputs.Count - 1].TimeStamp = DateTime.Parse(inputs[inputs.Count - 1].SentDate, new CultureInfo("fr-CA", false));
             }
             catch (Exception e)
