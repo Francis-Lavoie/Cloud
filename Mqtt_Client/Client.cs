@@ -15,6 +15,7 @@ namespace Mqtt_Client
     {
         private IManagedMqttClient mqttClient;
         private Random rnd;
+        private string topic = "/local/zoneID/transmitterId/sensorId/dataType";
 
         public Client()
         {
@@ -22,7 +23,7 @@ namespace Mqtt_Client
             MqttClientOptionsBuilder builder = new MqttClientOptionsBuilder()
                                                        .WithClientId("Development")
                                                        .WithTcpServer("localhost", 8883)
-                                                       .WithCredentials("user1", "password");
+                                                       .WithCredentials("1932614@etu.cegepjonquiere.ca", "Suzukiz400&*");
 
             ManagedMqttClientOptions options = new ManagedMqttClientOptionsBuilder()
                                     .WithAutoReconnectDelay(TimeSpan.FromSeconds(10))
@@ -70,7 +71,7 @@ namespace Mqtt_Client
             };
 
             string json = JsonConvert.SerializeObject(input);
-            mqttClient.PublishAsync("dev.to/topic/json", json);
+            mqttClient.PublishAsync(topic, json);
 
             value = rnd.Next(1, 25);
             valueType = "float";
@@ -90,7 +91,7 @@ namespace Mqtt_Client
             };
 
             json = JsonConvert.SerializeObject(input);
-            mqttClient.PublishAsync("dev.to/topic/json", json);
+            mqttClient.PublishAsync(topic, json);
         }
 
         /// <summary>
@@ -105,19 +106,16 @@ namespace Mqtt_Client
 
         private void OnConnected(MqttClientConnectedEventArgs obj)
         {
-            //Log.Logger.Information("Successfully connected.");
             Interface.WriteLine("Connected");
         }
 
         private void OnConnectingFailed(ManagedProcessFailedEventArgs obj)
         {
-            //Log.Logger.Warning("Couldn't connect to broker.");
             Interface.WriteLine("Connection failed");
         }
 
         private void OnDisconnected(MqttClientDisconnectedEventArgs obj)
         {
-            //Log.Logger.Information("Successfully disconnected.");
             Interface.WriteLine("Disconnected");
         }
     }

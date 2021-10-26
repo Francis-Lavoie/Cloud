@@ -10,8 +10,9 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using MQTTnet.Protocol;
-using System.Security.Cryptography.X509Certificates;
-using System.Net.Security;
+using System.DirectoryServices.Protocols;
+using System.Security.Authentication;
+using System.Net;
 
 namespace Mqtt_Server
 {
@@ -48,18 +49,7 @@ namespace Mqtt_Server
                 .WithDefaultEndpointPort(8883)
                 .WithConnectionValidator(OnNewConnection)
                 .WithApplicationMessageInterceptor(OnNewMessage)
-                .WithConnectionValidator(c =>
-                {
-                    for (int i = 0; i < Users.Count; i++)
-                    {
-                        if (Users[i] == c.Username && Passwords[i] == c.Password)
-                        {
-                            c.ReasonCode = MqttConnectReasonCode.Success;
-                            return;
-                        }
-                    }
-                    c.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;
-                });
+                .WithConnectionValidator(ValidateClient);
 
             IMqttServer mqttServer = new MqttFactory().CreateMqttServer();
             mqttServer.StartAsync(options.Build()).GetAwaiter().GetResult();
@@ -67,19 +57,45 @@ namespace Mqtt_Server
             Interface.ReadLine();
         }
 
-        private bool ValidateCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        private void ValidateClient(MqttConnectionValidatorContext c)
         {
-            if (sslPolicyErrors == SslPolicyErrors.None)
-                return true;
-            Console.WriteLine("Certificate error: {0}", sslPolicyErrors);
+            try
+            {
+                if (!c.Username.StartsWith("SVEA"))
+                {
+                    c.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;
+                    return;
+                }
 
-            // Do not allow this client to communicate with unauthenticated servers.
-            return false;
-        }
+                using (LdapConnection connection = new LdapConnection("cegepjonquiere.ca"))
+                {
+                    NetworkCredential credential = new NetworkCredential(c.Username, c.Password);
+                    connection.Credential = credential;
+                    connection.Bind();
+                    c.ReasonCode = MqttConnectReasonCode.Success;
+                    return;
+                }
+            }
+            catch (LdapException lex)
+            {
+                Interface.WriteLine(lex.Message + " " + lex.InnerException);
+                c.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;
+                return;
+            }
+            catch (Exception e)
+            {
+                Interface.WriteLine(e.Message + " " + e.InnerException);
+            }
 
-        private void ValidateClient()
-        {
-
+            for (int i = 0; i < Users.Count; i++)
+            {
+                if (Users[i] == c.Username && Passwords[i] == c.Password)
+                {
+                    c.ReasonCode = MqttConnectReasonCode.Success;
+                    return;
+                }
+            }
+            c.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;
         }
 
         /// <summary>
@@ -212,7 +228,7 @@ namespace Mqtt_Server
                 try
                 {
                     string key = Authentication.GetFunctionKey();
-                    string url = "https://sveatest1.azurewebsites.net/api/HttpConnection";
+                    string url = "https://svea21app.azurewebsites.net/api/HttpConnection";
 
                     client.DefaultRequestHeaders.Add("x-functions-key", key);
                     StringContent stringContent = new StringContent(data.ToString());
@@ -251,10 +267,12 @@ namespace Mqtt_Server
             try
             {
                 List<Input> inputs = GetUsableInputList();
+                string topic = context.ApplicationMessage.Topic;
+                Interface.WriteLine(topic);
                 inputs.Add(JsonConvert.DeserializeObject<Input>(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload)));
                 inputs[inputs.Count - 1].TimeStamp = DateTime.Parse(inputs[inputs.Count - 1].SentDate, new CultureInfo("fr-CA", false));
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Interface.WriteLine(e.Message);
                 Interface.WriteLine(System.Text.Encoding.Default.GetString(context.ApplicationMessage?.Payload));
