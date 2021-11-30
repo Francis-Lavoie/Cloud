@@ -23,7 +23,7 @@ namespace Mqtt_Client
             rnd = new Random();
             MqttClientOptionsBuilder builder = new MqttClientOptionsBuilder()
                                                        .WithClientId("Development")
-                                                       .WithTcpServer("localhost", 8883)
+                                                       .WithTcpServer("LOCALHOST", 8883)
                                                        .WithCredentials("svea21-03@etu.cegepjonquiere.ca", "m0dd3Pa$$");
 
             ManagedMqttClientOptions options = new ManagedMqttClientOptionsBuilder()

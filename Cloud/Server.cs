@@ -37,9 +37,6 @@ namespace Mqtt_Server
             inputs2 = new List<Input>();
             useInputs1 = true;
 
-            Users = new List<string>() { "user1" };
-            Passwords = new List<string>() { "password" };
-
             SetTimer();
             MqttServerOptions serverOptions = new MqttServerOptions();
             serverOptions.TlsEndpointOptions.IsEnabled = true;
@@ -228,7 +225,7 @@ namespace Mqtt_Server
                 try
                 {
                     string key = Authentication.GetFunctionKey();
-                    string url = "https://svea21app.azurewebsites.net/api/HttpConnection";
+                    string url = Authentication.GetAzureFunctionURL();
 
                     client.DefaultRequestHeaders.Add("x-functions-key", key);
                     StringContent stringContent = new StringContent(data.ToString());

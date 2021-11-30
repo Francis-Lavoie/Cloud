@@ -22,5 +22,19 @@ namespace Objects
                 return "";
             }
         }
+
+        public static string GetAzureFunctionURL()
+        {
+            try
+            {
+                StreamReader reader = new StreamReader($"{basePath}Access\\AzureFunctionUrl.txt");
+                return reader.ReadToEnd();
+            }
+            catch (Exception e)
+            {
+                Interface.WriteLine($"Unable to get access key. {e.Message}");
+                return "";
+            }
+        }
     }
 }
