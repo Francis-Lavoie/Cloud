@@ -150,8 +150,8 @@ namespace Mqtt_Server
             {
                 Transmitter transmitter = zone.Transmitters.Where(x => x.ID == firstInput.TransmitterId)?.FirstOrDefault();
                 transmitter.Sensors.Add(sensor);
+                transmitters.Add(transmitter);
             }
-
             AggregateData(inputs.Where(x => x.SensorId != firstInput.SensorId)?.ToList());
         }
 
